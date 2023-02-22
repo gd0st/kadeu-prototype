@@ -4,6 +4,7 @@ use serde_json;
 use std::env;
 use std::fs;
 use std::fs::File;
+use std::io;
 use std::io::Read;
 mod ui;
 
@@ -41,28 +42,56 @@ fn main() {
             let deck: serde_json::Result<Deck> = serde_json::from_str(&buff);
             match deck {
                 Ok(deck) => {
-                    dbg!(decks.push(deck));
+                    decks.push(deck);
                 }
                 Err(_) => eprintln!("{:?} Invalid deck.", &unwrapped),
             }
         }
-
         // Check the files if they are valid during the output.
     }
 
-    // Load the deck
-    // Hand the deck to Scheduler
-    //
-    // Scheduler returns the cards.
-    //
+    //better
+    decks.iter().for_each(|x| println!("{}", x.title()));
+    println!("Please Select:");
+    let mut buff_select = String::new();
+    io::stdin().read_line(&mut buff_select).unwrap();
+    if let Some('\n') = buff_select.chars().next_back() {
+        buff_select.pop();
+    }
+    if let Some('\r') = buff_select.chars().next_back() {
+        buff_select.pop();
+    }
+
+    let mut possible_decks: Vec<&Deck> = decks
+        .iter()
+        .filter(|x| x.title().eq(&buff_select))
+        .collect();
+
+    if let Some(deck) = possible_decks.pop() {
+        let game = init_game(deck, 0);
+    }
+}
+
+struct Game {
+    mode: u8,
+    deck: &Deck,
+}
+
+fn init_game(deck: &Deck, mode: u8) -> Game {
+    Game { mode, deck }
 }
 
 mod schedule {
     use flashcards::{Card, Deck};
-    trait Schedule {
-        fn new(deck: Deck) -> Self;
-        fn sequence(&self) -> Vec<&Card>;
+    trait Schedule<'a> {
+        fn schedule(&self) -> Vec<&Card>;
+
+        fn from_cards(Vec<&'a Card>) -> Vec<&'a Card>;
     }
+
+    struct Random<'a>(Vec<&'a Deck>);
+
+    impl Schedule for Random {}
 }
 
 impl Config {

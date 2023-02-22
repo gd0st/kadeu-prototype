@@ -22,6 +22,10 @@ impl Deck {
             description: None,
         }
     }
+
+    pub fn title(&self) -> &String {
+        &self.title
+    }
 }
 
 #[derive(Deserialize)]
