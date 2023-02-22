@@ -1,5 +1,5 @@
 mod lib;
-use lib::Deck;
+use lib::{Deck, Card};
 use serde_json;
 use std::env;
 use std::fs;
@@ -53,8 +53,31 @@ fn main() {
     //better
     decks.iter().for_each(|x| println!("{}", x.title()));
     println!("Please Select:");
+	let input = read_strip();
+
+    let mut possible_decks: Vec<&Deck> = decks
+        .iter()
+        .filter(|x| x.title().eq(&input))
+        .collect();
+
+    if let Some(deck) = possible_decks.pop() {
+        // let game = init_game(deck, 0);
+		println!("Game is meant to start here.");
+		use schedule::Schedule;
+		let sequence = schedule::Random::schedule(deck.cards());
+		for card in sequence {
+			println!("Question: ");
+			let answer = read_strip();
+			println!("{}", answer)
+		}
+    }
+}
+
+
+fn read_strip() -> String {
     let mut buff_select = String::new();
     io::stdin().read_line(&mut buff_select).unwrap();
+
     if let Some('\n') = buff_select.chars().next_back() {
         buff_select.pop();
     }
@@ -62,36 +85,35 @@ fn main() {
         buff_select.pop();
     }
 
-    let mut possible_decks: Vec<&Deck> = decks
-        .iter()
-        .filter(|x| x.title().eq(&buff_select))
-        .collect();
+	buff_select
+} 
 
-    if let Some(deck) = possible_decks.pop() {
-        let game = init_game(deck, 0);
-    }
-}
+// struct Game {
+//     mode: u8,
+//     deck: &Deck,
+// }
 
-struct Game {
-    mode: u8,
-    deck: &Deck,
-}
-
-fn init_game(deck: &Deck, mode: u8) -> Game {
-    Game { mode, deck }
-}
+// fn init_game(deck: &Deck, mode: u8) -> Game {
+//     Game { mode, deck }
+// }
 
 mod schedule {
-    use flashcards::{Card, Deck};
-    trait Schedule<'a> {
-        fn schedule(&self) -> Vec<&Card>;
-
-        fn from_cards(Vec<&'a Card>) -> Vec<&'a Card>;
+    use crate::lib::{Card, Deck};
+	use rand::{thread_rng, seq::SliceRandom};
+    pub trait Schedule {
+		fn schedule(cards: Vec<&Card>) -> Vec<&Card>;
     }
 
-    struct Random<'a>(Vec<&'a Deck>);
+	pub struct Random{}
 
-    impl Schedule for Random {}
+	impl Schedule for Random {
+		fn schedule(mut cards: Vec<&Card>) -> Vec<&Card> {
+			cards.shuffle(&mut thread_rng());
+			cards
+		}
+	}
+
+    // impl Schedule for Random {}
 }
 
 impl Config {
