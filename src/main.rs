@@ -1,7 +1,10 @@
 mod lib;
+use home;
 use lib::{Card, Deck};
 use serde_json;
 use std::env;
+use std::ffi::OsString;
+use std::fmt::Error;
 use std::fs;
 use std::fs::DirEntry;
 use std::fs::File;
@@ -15,39 +18,68 @@ enum Event<I> {
     Tick,
 }
 
+#[derive(Debug)]
+enum ConfigError {
+    NO_HOME(String),
+}
+
+#[derive(Debug, Clone)]
+struct Config {
+    pub root_directory: String,
+}
+
+impl From<PathBuf> for Config {
+    fn from(path: PathBuf) -> Config {
+        Config {
+            root_directory: path.to_str().unwrap().to_string(),
+        }
+    }
+}
+
+fn get_config() -> Result<Config, ConfigError> {
+    if let Some(mut path) = home::home_dir() {
+        path.push(".kadeu");
+        Ok(path.into())
+    } else {
+        Err(ConfigError::NO_HOME(
+            "Could not find $HOME for the user agent".to_string(),
+        ))
+    }
+}
+
+impl From<serde_json::Value> for Config {}
+
 fn main() {
     // TUI logic at this point after the flashcards have been loaded.
     //
     // Define a simple game flow
     //
-    let kadeu_directory = ".kadeu";
-    let mut home_path = env::var_os("HOME").expect("Failed to source $HOME env path for the user.");
-    home_path.push(format!("/{}", kadeu_directory));
 
-    let kadeu_path: PathBuf = home_path.into();
-    let config: Config = kadeu_path.try_into().unwrap();
-    let valid_deck_paths = DeckPaths::new(&config).unwrap();
-    let decks: Vec<Deck> = valid_deck_paths
-        .paths
-        .iter()
-        .map(|x| Deck::from(x))
-        .collect();
+    let config: Config = get_config().unwrap();
+    println!("{:?}", config);
 
-    let mut deck: Option<&Deck> = None;
-
-    while deck.is_none() {
-        for path in decks.iter() {
-            println!("{}", path.title());
-        }
-        println!("Please Choose A Deck:");
-        let input = read_and_strip();
-        let mut temp: Vec<&Deck> = decks.iter().filter(|x| *x.title() == input).collect();
-        deck = temp.pop();
-    }
-
-    if let Some(deck) = deck {
-        println!("Found a deck! {}", deck.title())
-    }
+    //let valid_deck_paths = DeckPaths::new(&config).unwrap();
+    //let decks: Vec<Deck> = valid_deck_paths
+    //.paths
+    //.iter()
+    //.map(|x| Deck::from(x))
+    //.collect();
+    //let mut deck: Option<&Deck> = None;
+    //
+    //while deck.is_none() {
+    //for path in decks.iter() {
+    //println!("{}", path.title());
+    //}
+    //println!("Please Choose A Deck:");
+    //let input = read_and_strip();
+    //let mut temp: Vec<&Deck> = decks.iter().filter(|x| *x.title() == input).collect();
+    //deck = temp.pop();
+    //}
+    //
+    //
+    //if let Some(deck) = deck {
+    //println!("Found a deck! {}", deck.title())
+    //}
 
     //let file_meta = fs::metadata(&user_path).expect("Could not get metadata for user path");
     //
@@ -102,6 +134,7 @@ enum DeckError {
 }
 
 impl From<&fs::DirEntry> for Deck {
+    // TODO Better Error Handling
     fn from(entry: &fs::DirEntry) -> Deck {
         serde_json::from_str(&fs::read_to_string(entry.path()).unwrap()).unwrap()
     }
@@ -175,16 +208,4 @@ mod schedule {
     }
 
     // impl Schedule for Random {}
-}
-
-struct Config {
-    pub root_directory: String,
-}
-
-impl From<PathBuf> for Config {
-    fn from(path: PathBuf) -> Config {
-        Config {
-            root_directory: path.to_str().unwrap().to_string(),
-        }
-    }
 }

@@ -16,3 +16,4 @@ rand = { version = "0.7.3", default-features = false, features = ["std"] }
 thiserror = "1.0"
 tui = "0.19" # These reqs might change later depending on the new project.
 crossterm = "0.25"
+home = "0.5.4"
