@@ -26,15 +26,14 @@ impl Deck {
     pub fn title(&self) -> &String {
         &self.title
     }
-	pub fn cards(&self) -> Vec<&Card> {
-		let mut cache: Vec<&Card> = Vec::new();
-		for card in &self.cards {
-			cache.push(card)
-		}
-		cache
-	}
+    pub fn cards(&self) -> Vec<&Card> {
+        let mut cache: Vec<&Card> = Vec::new();
+        for card in &self.cards {
+            cache.push(card)
+        }
+        cache
+    }
 }
-
 
 #[derive(Deserialize)]
 #[serde(untagged)]
