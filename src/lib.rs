@@ -57,14 +57,40 @@ impl Card {
             tags: None,
         }
     }
+
+    pub fn challenge(&self) -> &str {
+        &self.challenge
+    }
+
+    pub fn answers(&self) -> Vec<&String> {
+        match &self.target {
+            Target::Simple(target) => vec![&target],
+            Target::Multi(targets) => targets.iter().collect(),
+        }
+    }
+
+    pub fn validate(&self, answer: &String) -> bool {
+        self.target.is_valid(answer)
+    }
 }
 
 impl Target {
-    fn is_valid(&self, input: &str) -> bool {
+    pub fn is_valid(&self, input: &str) -> bool {
         match self {
             Target::Simple(target) => input == target,
             Target::Multi(targets) => targets.iter().any(|target| *target == *input),
         }
+    }
+}
+
+impl From<Vec<String>> for Target {
+    fn from(targets: Vec<String>) -> Target {
+        Target::Multi(targets)
+    }
+}
+impl From<String> for Target {
+    fn from(target: String) -> Target {
+        Target::Simple(target)
     }
 }
 

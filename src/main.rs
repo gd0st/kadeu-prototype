@@ -1,62 +1,104 @@
 mod lib;
-use home;
 use lib::{Card, Deck};
+mod game;
+
+use game::schedule;
+use game::{Game, Practice, Typed};
+use rand::seq::SliceRandom;
+use rand::thread_rng;
 use serde_json;
-use std::env;
-use std::ffi::OsString;
-use std::fmt::Error;
-use std::fs;
-use std::fs::DirEntry;
-use std::fs::File;
-use std::io;
-use std::io::Read;
-use std::path::{Path, PathBuf};
 mod ui;
+use std::fs;
+use std::io;
 
 enum Event<I> {
     Input(I),
     Tick,
 }
 
-#[derive(Debug)]
-enum ConfigError {
-    NO_HOME(String),
+enum GameMode {
+    Practice,
+    Typed,
 }
 
-#[derive(Debug, Clone)]
-struct Config {
-    pub root_directory: String,
-}
+mod config {
+    use home;
+    use std::path::PathBuf;
 
-impl From<PathBuf> for Config {
-    fn from(path: PathBuf) -> Config {
-        Config {
-            root_directory: path.to_str().unwrap().to_string(),
+    mod errors {
+        #[derive(Debug)]
+        pub enum ConfigError {
+            NO_HOME(String),
+        }
+    }
+
+    #[derive(Debug, Clone)]
+    pub struct Config {
+        pub root_directory: PathBuf,
+    }
+
+    pub fn get_config() -> Result<Config, errors::ConfigError> {
+        if let Some(mut path) = home::home_dir() {
+            path.push(".kadeu");
+            Ok(Config {
+                root_directory: path.into(),
+            })
+        } else {
+            Err(errors::ConfigError::NO_HOME(
+                "Could not find $HOME for the user agent".to_string(),
+            ))
         }
     }
 }
 
-fn get_config() -> Result<Config, ConfigError> {
-    if let Some(mut path) = home::home_dir() {
-        path.push(".kadeu");
-        Ok(path.into())
-    } else {
-        Err(ConfigError::NO_HOME(
-            "Could not find $HOME for the user agent".to_string(),
-        ))
-    }
-}
-
-impl From<serde_json::Value> for Config {}
-
-fn main() {
+fn main() -> io::Result<()> {
     // TUI logic at this point after the flashcards have been loaded.
     //
     // Define a simple game flow
     //
 
-    let config: Config = get_config().unwrap();
-    println!("{:?}", config);
+    let config: config::Config = config::get_config().unwrap();
+
+    let entries = fs::read_dir(&config.root_directory)?
+        .map(|res| res.map(|e| e.path()))
+        .collect::<Result<Vec<_>, io::Error>>()?;
+
+    let mut decks: Vec<Deck> = Vec::new();
+    for entry in entries {
+        let buff = fs::read_to_string(entry).unwrap();
+        let de_deck: serde_json::Result<Deck> = serde_json::from_str(&buff);
+
+        match de_deck {
+            Ok(deck) => decks.push(deck),
+            Err(_) => {}
+        }
+    }
+
+    let mut deck: Option<&Deck> = None;
+    while deck.is_none() {
+        decks.iter().for_each(|x| println!("{}", x.title()));
+        println!("Please select a deck:");
+        let input = read_and_strip();
+
+        if input == "exit".to_string() {
+            break;
+        }
+
+        deck = decks
+            .iter()
+            .filter(|x| x.title() == &input)
+            .collect::<Vec<&Deck>>()
+            .pop();
+    }
+    if let Some(mut deck) = deck {
+        let logs = Typed::play(deck);
+
+        for log in logs {
+            println!("{}", log);
+        }
+    }
+
+    Ok(())
 
     //let valid_deck_paths = DeckPaths::new(&config).unwrap();
     //let decks: Vec<Deck> = valid_deck_paths
@@ -123,58 +165,9 @@ fn main() {
     //let sequence = schedule::Random::schedule(deck.cards());
     //for card in sequence {
     //println!("Question: ");
-    //let answer = read_strip();
     //println!("{}", answer)
     //}
     //}
-}
-
-enum DeckError {
-    BadFormat(String),
-}
-
-impl From<&fs::DirEntry> for Deck {
-    // TODO Better Error Handling
-    fn from(entry: &fs::DirEntry) -> Deck {
-        serde_json::from_str(&fs::read_to_string(entry.path()).unwrap()).unwrap()
-    }
-}
-
-struct DeckPaths {
-    pub paths: Vec<DirEntry>,
-    root_directory: String,
-}
-
-#[derive(Debug)]
-enum DeckPathError {
-    NoDirectory(String),
-    CannotReadRootDirectory(String),
-}
-impl DeckPaths {
-    fn new(config: &Config) -> Result<DeckPaths, DeckPathError> {
-        let kadeu_root = config.root_directory.clone();
-        let entries = match fs::read_dir(&kadeu_root) {
-            Ok(files) => files,
-            Err(err) => {
-                return Err(DeckPathError::NoDirectory(err.to_string()));
-            }
-        };
-        let mut valid_paths: Vec<DirEntry> = Vec::new();
-        for entry in entries {
-            if let Ok(file) = entry {
-                let buff = fs::read_to_string(file.path()).unwrap();
-                // Not really sure how to just match the serde_json part.
-                let deck: serde_json::Result<Deck> = serde_json::from_str(&buff);
-                if deck.is_ok() {
-                    valid_paths.push(file)
-                }
-            }
-        }
-        Ok(DeckPaths {
-            paths: valid_paths,
-            root_directory: kadeu_root,
-        })
-    }
 }
 
 fn read_and_strip() -> String {
@@ -189,23 +182,4 @@ fn read_and_strip() -> String {
     }
 
     buff_select
-}
-
-mod schedule {
-    use crate::lib::{Card, Deck};
-    use rand::{seq::SliceRandom, thread_rng};
-    pub trait Schedule {
-        fn schedule(cards: Vec<&Card>) -> Vec<&Card>;
-    }
-
-    pub struct Random {}
-
-    impl Schedule for Random {
-        fn schedule(mut cards: Vec<&Card>) -> Vec<&Card> {
-            cards.shuffle(&mut thread_rng());
-            cards
-        }
-    }
-
-    // impl Schedule for Random {}
 }
