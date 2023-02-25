@@ -17,3 +17,4 @@ thiserror = "1.0"
 tui = "0.19" # These reqs might change later depending on the new project.
 crossterm = "0.25"
 home = "0.5.4"
+uuid = { version="1.3.0", features=["v4", "fast-rng"] }

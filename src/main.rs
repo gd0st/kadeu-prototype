@@ -1,5 +1,7 @@
 mod lib;
 use lib::{Card, Deck};
+mod app;
+use app::{DeckDB, DeckFs, DeckFsConfig};
 mod game;
 
 use game::schedule;
@@ -21,7 +23,7 @@ enum GameMode {
     Typed,
 }
 
-mod config {
+pub mod config {
     use home;
     use std::path::PathBuf;
 
@@ -51,6 +53,15 @@ mod config {
     }
 }
 
+impl From<config::Config> for DeckFsConfig {
+    fn from(config: config::Config) -> DeckFsConfig {
+        let config_directory = config.root_directory.clone().push(".config");
+        DeckFsConfig {
+            root_directory: config.root_directory,
+        }
+    }
+}
+
 fn main() -> io::Result<()> {
     // TUI logic at this point after the flashcards have been loaded.
     //
@@ -59,43 +70,14 @@ fn main() -> io::Result<()> {
 
     let config: config::Config = config::get_config().unwrap();
 
-    let entries = fs::read_dir(&config.root_directory)?
-        .map(|res| res.map(|e| e.path()))
-        .collect::<Result<Vec<_>, io::Error>>()?;
+    let fs_config: DeckFsConfig = config.into();
+    let db: DeckFs = DeckFs::new(fs_config)?;
 
-    let mut decks: Vec<Deck> = Vec::new();
-    for entry in entries {
-        let buff = fs::read_to_string(entry).unwrap();
-        let de_deck: serde_json::Result<Deck> = serde_json::from_str(&buff);
-
-        match de_deck {
-            Ok(deck) => decks.push(deck),
-            Err(_) => {}
-        }
+    for title in db.titles() {
+        println!("{:?}", title);
     }
-
-    let mut deck: Option<&Deck> = None;
-    while deck.is_none() {
-        decks.iter().for_each(|x| println!("{}", x.title()));
-        println!("Please select a deck:");
-        let input = read_and_strip();
-
-        if input == "exit".to_string() {
-            break;
-        }
-
-        deck = decks
-            .iter()
-            .filter(|x| x.title() == &input)
-            .collect::<Vec<&Deck>>()
-            .pop();
-    }
-    if let Some(mut deck) = deck {
-        let logs = Typed::play(deck);
-
-        for log in logs {
-            println!("{}", log);
-        }
+    for title in db.titles() {
+        println!("{:?}", title);
     }
 
     Ok(())

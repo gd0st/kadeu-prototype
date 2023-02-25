@@ -7,7 +7,7 @@ trait Validator {
 
 #[derive(Deserialize)]
 pub struct Deck {
-    title: String,
+    pub title: String,
     tags: Option<Vec<String>>,
     description: Option<String>,
     cards: Vec<Card>,
@@ -37,11 +37,10 @@ impl Deck {
 
 #[derive(Deserialize)]
 #[serde(untagged)]
-enum Tag {
+pub enum Tag {
     Single(String),
     Many(Vec<String>),
 }
-
 #[derive(Deserialize)]
 pub struct Card {
     tags: Option<Tag>,
