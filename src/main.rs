@@ -55,7 +55,8 @@ pub mod config {
 
 impl From<config::Config> for DeckFsConfig {
     fn from(config: config::Config) -> DeckFsConfig {
-        let config_directory = config.root_directory.clone().push(".config");
+        // Might be useful some other day.
+        let _ = config.root_directory.clone().push(".config");
         DeckFsConfig {
             root_directory: config.root_directory,
         }
@@ -63,21 +64,38 @@ impl From<config::Config> for DeckFsConfig {
 }
 
 fn main() -> io::Result<()> {
-    // TUI logic at this point after the flashcards have been loaded.
-    //
-    // Define a simple game flow
-    //
+    // What is the beginning of a user interface?
+    // As in what is the bare minimum interface for a program to be built upon?
+    // I think I need t accomplish making the program usable through command line arguments.
+    // Afterwards the game needs to have a comprehensive interactive interface.
+    // The interface will start with just stdio and the advance to the TUI
+    // After the tui has been accomplished and features seem good enough,
+    // The web browser and other parts can be accomplished
 
     let config: config::Config = config::get_config().unwrap();
 
     let fs_config: DeckFsConfig = config.into();
     let db: DeckFs = DeckFs::new(fs_config)?;
 
+    println!("{:?}", db.titles());
     for title in db.titles() {
-        println!("{:?}", title);
+        println!("{}", title);
     }
-    for title in db.titles() {
-        println!("{:?}", title);
+    println!("Select a deck:");
+
+    let mut input = read_and_strip();
+    // Game mode would have to be selected somewhere here.
+    if let Some(game_deck) = db.find_from_string(input) {
+        // Schedule would need to added somewhere in here for randommization.
+        for card in game_deck.cards {
+            println!("{}:", card.challenge);
+            input = read_and_strip();
+            if card.targets.iter().any(|x| x == &input) {
+                println!("Correct!")
+            } else {
+                println!("Wrong!")
+            }
+        }
     }
 
     Ok(())

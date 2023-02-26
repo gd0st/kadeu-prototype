@@ -27,17 +27,17 @@ mod objects {
     pub struct Deck {
         pub title: String,
         pub tags: Vec<String>,
-        cards: Vec<Card>,
+        pub cards: Vec<Card>,
     }
 
     #[derive(Deserialize, Clone, Debug)]
     pub struct Card {
-        challenge: String,
-        target: Vec<String>,
+        pub challenge: String,
+        pub targets: Vec<String>,
     }
     impl Card {
-        pub fn new(challenge: String, target: Vec<String>) -> Card {
-            Card { challenge, target }
+        pub fn new(challenge: String, targets: Vec<String>) -> Card {
+            Card { challenge, targets }
         }
     }
 }
@@ -101,6 +101,9 @@ impl DeckFs {
         for entry in entries {
             let buff = fs::read_to_string(entry).unwrap();
             let de_deck: serde_json::Result<Deck> = serde_json::from_str(&buff);
+            if let Err(e) = &de_deck {
+                dbg!(e);
+            }
             match de_deck {
                 Ok(deck) => decks.push(deck),
                 Err(_) => {}
