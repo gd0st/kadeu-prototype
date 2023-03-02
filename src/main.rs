@@ -1,22 +1,27 @@
 mod lib;
+use crossterm::event::{self, Event, KeyCode};
+use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use lib::{Card, Deck};
 mod app;
 use app::{DeckDB, DeckFs, DeckFsConfig};
 mod game;
-
 use game::schedule;
 use game::{Game, Practice, Typed};
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use serde_json;
+use tui::widgets::canvas::Rectangle;
+use tui::{
+    backend::CrosstermBackend,
+    layout::{Constraint, Direction, Layout},
+    style::{Color, Style},
+    text::{Span, Spans},
+    widgets::{Block, Borders, List, ListItem, Paragraph, Widget},
+    Terminal,
+};
 mod ui;
 use std::fs;
 use std::io;
-
-enum Event<I> {
-    Input(I),
-    Tick,
-}
 
 enum GameMode {
     Practice,
@@ -77,23 +82,98 @@ fn main() -> io::Result<()> {
     let fs_config: DeckFsConfig = config.into();
     let db: DeckFs = DeckFs::new(fs_config)?;
 
-    println!("{:?}", db.titles());
+    enable_raw_mode()?;
+    let mut stdout = io::stdout();
+    let backend = CrosstermBackend::new(stdout);
+    let mut terminal = tui::Terminal::new(backend)?;
+
     for title in db.titles() {
         println!("{}", title);
     }
     println!("Select a deck:");
 
+    let mut input = String::new();
+
+    loop {
+        terminal.draw(|frame| {
+            let mut items: Vec<ListItem> = Vec::new();
+
+            for title in db.titles() {
+                items.push(ListItem::new(title))
+            }
+
+            let chunks = Layout::default()
+                .direction(Direction::Horizontal)
+                .margin(1)
+                .constraints([Constraint::Percentage(100)].as_ref())
+                .split(frame.size());
+            let paragraph_block = Block::default()
+                .title("Choose A Deck")
+                .borders(Borders::ALL)
+                .style(Style::default().bg(Color::Black));
+            let text = vec![Spans::from(Span::raw(input.as_str()))];
+
+            let paragraph = Paragraph::new(text).block(paragraph_block);
+            //let decks_list = List::new(items).block(paragraph_block);
+            frame.render_widget(paragraph, chunks[0])
+        });
+
+        if let Event::Key(key) = event::read()? {
+            match key.code {
+                KeyCode::Enter => return Ok(()),
+                KeyCode::Char(c) => input.push(c),
+                KeyCode::Backspace => {
+                    input.pop();
+                }
+                KeyCode::Esc => {
+                    disable_raw_mode()?;
+                    return Ok(());
+                }
+                _ => {}
+            }
+        } else {
+            disable_raw_mode()?;
+            return Ok(());
+        }
+    }
+    return Ok(());
     let mut input = read_and_strip();
+
+    terminal.draw(|frame| {
+        let chunks = Layout::default()
+            .direction(Direction::Horizontal)
+            .margin(1)
+            .constraints([Constraint::Percentage(100)].as_ref())
+            .split(frame.size());
+
+        let paragraph_block = Block::default()
+            .title("Welcome to the World!")
+            .borders(Borders::ALL)
+            .style(Style::default().bg(Color::Black));
+        let paragraph = Paragraph::new("Hello World!").block(paragraph_block);
+        frame.render_widget(paragraph, chunks[0])
+    });
+
+    disable_raw_mode()?;
+
+    //Need randomizer
     // Game mode would have to be selected somewhere here.
     if let Some(game_deck) = db.find_from_string(input) {
         // Schedule would need to added somewhere in here for randommization.
-        for card in game_deck.cards {
+
+        let mut cards = game_deck.cards;
+        println!("{:?}", &cards[0]);
+        cards.shuffle(&mut thread_rng());
+        println!("{:?}", &cards[0]);
+        for card in cards {
             println!("{}:", card.challenge);
             input = read_and_strip();
             if card.targets.iter().any(|x| x == &input) {
-                println!("Correct!")
+                println!("Yes!")
             } else {
-                println!("Wrong!")
+                println!("No :(");
+                println!("Acceptable Answers");
+                card.targets.iter().for_each(|x| println!("{}", x));
             }
         }
     }
