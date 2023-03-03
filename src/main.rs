@@ -1,9 +1,11 @@
+mod app;
 mod lib;
+use app::objects;
+use app::{DeckDB, DeckFs, DeckFsConfig};
+use crossbeam::channel::SelectedOperation;
 use crossterm::event::{self, Event, KeyCode};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use lib::{Card, Deck};
-mod app;
-use app::{DeckDB, DeckFs, DeckFsConfig};
 mod game;
 use game::schedule;
 use game::{Game, Practice, Typed};
@@ -86,41 +88,95 @@ fn main() -> io::Result<()> {
     let mut stdout = io::stdout();
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = tui::Terminal::new(backend)?;
-
-    for title in db.titles() {
-        println!("{}", title);
-    }
-    println!("Select a deck:");
-
+    let mut deck_titles = db.titles();
     let mut input = String::new();
+    let mut selected_deck: Option<objects::Deck> = None;
 
     loop {
         terminal.draw(|frame| {
+            match input.as_str() {
+                ":q" => {
+                    return;
+                }
+                ":reload" => {
+                    println!("Reloading!");
+                    deck_titles = db.titles();
+                }
+                _ => {}
+            }
+
+            if deck_titles.iter().any(|x| x == &input) {
+                println!("Found a Deck!");
+                return;
+            };
+
             let mut items: Vec<ListItem> = Vec::new();
 
             for title in db.titles() {
-                items.push(ListItem::new(title))
+                if title == input {
+                    selected_deck = db.find_from_string(input.clone());
+                }
+                items.push(ListItem::new(title));
             }
+
+            // Simple black background.
+            //let background = Layout::default()
+            //.constraints([Constraint::Percentage(100)].as_ref())
+            //.split(frame.size());
+            //let backing = Block::default().style(Style::default().bg(Color::Black));
+            //
+            //frame.render_widget(backing, background[0]);
 
             let chunks = Layout::default()
                 .direction(Direction::Horizontal)
                 .margin(1)
-                .constraints([Constraint::Percentage(100)].as_ref())
+                .constraints(
+                    [
+                        Constraint::Percentage(30),
+                        Constraint::Percentage(30),
+                        Constraint::Percentage(30),
+                    ]
+                    .as_ref(),
+                )
                 .split(frame.size());
-            let paragraph_block = Block::default()
-                .title("Choose A Deck")
-                .borders(Borders::ALL)
+
+            // Horizontal split into thirds.
+            // Then Vertical split into quarters.
+            let top_layout = Layout::default()
+                .direction(Direction::Vertical)
+                .margin(1)
+                .constraints([
+                    Constraint::Percentage(25),
+                    Constraint::Percentage(25),
+                    Constraint::Percentage(25),
+                    Constraint::Percentage(25),
+                ])
+                .split(chunks[1]);
+
+            let simple_block = Block::default()
+                .borders(Borders::NONE)
                 .style(Style::default().bg(Color::Black));
             let text = vec![Spans::from(Span::raw(input.as_str()))];
-
-            let paragraph = Paragraph::new(text).block(paragraph_block);
+            let deck_list = List::new(items).block(simple_block.clone());
+            let paragraph = Paragraph::new(text).block(simple_block.clone());
             //let decks_list = List::new(items).block(paragraph_block);
-            frame.render_widget(paragraph, chunks[0])
+            frame.render_widget(deck_list, top_layout[1]);
+            frame.render_widget(paragraph, top_layout[2]);
         });
 
         if let Event::Key(key) = event::read()? {
             match key.code {
-                KeyCode::Enter => return Ok(()),
+                KeyCode::Enter => {
+                    if let Some(deck) = selected_deck {
+                        println!("Deck has been selected!");
+                        disable_raw_mode()?;
+                        return Ok(());
+                    } else {
+                        println!("Failed to select a deck!");
+                        disable_raw_mode()?;
+                        return Ok(());
+                    }
+                }
                 KeyCode::Char(c) => input.push(c),
                 KeyCode::Backspace => {
                     input.pop();

@@ -20,7 +20,7 @@ trait Schedule {
     fn schedule(cards: Vec<&Card>) -> Vec<&Card>;
 }
 
-mod objects {
+pub mod objects {
     use serde::Deserialize;
 
     #[derive(Deserialize, Clone, Debug)]
