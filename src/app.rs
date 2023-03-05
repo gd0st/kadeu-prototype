@@ -20,12 +20,13 @@ trait Schedule {
     fn schedule(cards: Vec<&Card>) -> Vec<&Card>;
 }
 
-mod objects {
+pub mod objects {
+
     use serde::Deserialize;
 
     #[derive(Deserialize, Clone, Debug)]
     pub struct Deck {
-        pub title: String,
+        pub title: String, // TODO deprecate
         pub tags: Vec<String>,
         pub cards: Vec<Card>,
     }
@@ -49,9 +50,11 @@ enum DecksDBError {
 }
 
 pub trait DeckDB {
+    // TODO This should be a Result instead of option?
+    // TODO Might be better error handling, not sure yet.
     fn find_from_string(&self, string: String) -> Option<Deck>;
     fn tags(self) -> Vec<String>;
-    fn titles(&self) -> Vec<String>;
+    fn titles(&self) -> Vec<&str>;
 }
 
 pub struct DeckFs {
@@ -75,11 +78,13 @@ impl DeckDB for DeckFs {
         tags
     }
 
-    fn titles(&self) -> Vec<String> {
-        let mut titles: Vec<String> = Vec::new();
+    fn titles(&self) -> Vec<&str> {
+        let mut titles: Vec<&str> = Vec::new();
+
         for deck in &self.decks {
-            titles.push(deck.title.clone());
+            titles.push(deck.title.as_str());
         }
+        // TODO Figure out how to just map this shit...
         titles
     }
 }
@@ -110,6 +115,15 @@ impl DeckFs {
             }
         }
         Ok(DeckFs { decks })
+    }
+
+    pub fn get_decks(&self) -> Vec<&Deck> {
+        let mut decks: Vec<&Deck> = Vec::new();
+        for deck in &self.decks {
+            decks.push(deck);
+        }
+
+        decks
     }
 }
 
