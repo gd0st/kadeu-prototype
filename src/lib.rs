@@ -1,5 +1,5 @@
 #[derive(PartialEq)]
-struct SimpleCard {
+pub struct SimpleCard {
     front: String,
     back: String,
     tags: Vec<String>,
@@ -12,35 +12,32 @@ impl Card for SimpleCard {
     fn push_tag(&mut self, tag: String) {
         self.tags.push(tag);
     }
-
-    fn flip(&self) -> SimpleCard {
-        SimpleCard {
-            front: self.back.clone(),
-            back: self.front.clone(),
-            tags: self.tags.clone(),
-        }
+    fn is_valid(&self, answer: &String) -> bool {
+        self.back == *answer
+    }
+    fn get_front(&self) -> &String {
+        &self.front
+    }
+    fn get_back(&self) -> &String {
+        &self.back
     }
 }
 
-trait Card {
+pub trait Card {
     fn new(front: String, back: String, tags: Vec<String>) -> Self;
     fn push_tag(&mut self, tag: String);
-    fn flip(&self) -> Self;
+    fn get_front(&self) -> &String;
+    fn get_back(&self) -> &String;
+    fn is_valid(&self, answer: &String) -> bool;
 }
 
-impl Validator for SimpleCard {
-    fn is_valid(&self, tag: &String) -> bool {
-        self.back == *tag
-    }
-}
-
-trait Validator {
+pub trait Validator {
     fn is_valid(&self, tag: &String) -> bool;
 }
 
 #[cfg(test)]
 mod tests {
-    use super::SimpleCard;
+    use super::{Card, SimpleCard};
     #[test]
     fn make_card() {
         let front: String = "Foo".into();
