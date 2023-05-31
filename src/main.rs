@@ -1,5 +1,7 @@
-mod lib;
+mod core;
+use crate::core::cards;
 use clap::Parser;
+use csv;
 use std::io;
 
 #[derive(Debug, Parser)]
@@ -12,9 +14,12 @@ struct GameArgs {
     shuffle: bool,
 }
 fn main() {
+    let args = GameArgs::parse();
 
-    // TODO Start game engine
-    // TODO
+    let flashcards_filepath = args.flashcards;
+    println!("{}", &flashcards_filepath);
+
+    // TODO flashcard reader needs to be implemented after core game loop...
 }
 
 enum Schedule {

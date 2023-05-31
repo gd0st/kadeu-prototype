@@ -1,8 +1,6 @@
-mod Loader {
-    // module for loading cards from csv, json or maybe also yaml.
-}
+use serde;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, serde::Deserialize)]
 pub struct SimpleCard {
     front: String,
     back: String,
