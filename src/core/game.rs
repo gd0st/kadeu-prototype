@@ -1,9 +1,15 @@
-use crate::core::cards::Card;
+use crate::cards::{Card, Challenge, ChallengeInterface};
 
-pub enum Schedule {
-    Linear,
-    Random, // TODO: more card types.
+enum Answer {
+    Simple(String),
+    Complex(Vec<String>),
 }
+
+// TODO impl Schedule for each type of schedule?
+//pub enum Schedule {
+//Linear,
+//Random, // TODO: more card types.
+//}
 
 pub struct CardChallenge<T: Card> {
     card: T,
@@ -12,10 +18,9 @@ pub struct CardChallenge<T: Card> {
 
 struct Game<T: Card> {
     cards: Vec<T>,
-    schedule: Schedule,
 }
 
-///
+/// ! src/core/game.rs
 /// Ideally the gameplay loop would be as such:
 ///
 /// Game Configurations:
@@ -27,18 +32,3 @@ struct Game<T: Card> {
 /// The user answers the question with whatever given input.
 /// The user is notified if the answer was correct or false.
 /// The game ends when the game engine decides the user has answered enough questions.
-
-impl<'a, T: Card> Game<T> {
-    fn new(cards: Vec<T>, schedule: Schedule) -> Game<T> {
-        Game { cards, schedule }
-    }
-
-    fn query(&self) -> String {
-        // still need to find out how to program this properly.
-        "foo".to_string()
-    }
-
-    fn queue_cards(self) -> Vec<T> {
-        self.cards
-    }
-}

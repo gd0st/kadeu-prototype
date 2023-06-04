@@ -1,5 +1,31 @@
 use serde;
 
+pub struct Challenge {
+    question: String,
+    answer: String,
+}
+
+impl Challenge {
+    pub fn new(question: String, answer: String) -> Challenge {
+        Challenge { question, answer }
+    }
+}
+
+pub trait ChallengeInterface {
+    fn challenge(&self) -> Challenge;
+}
+
+impl ChallengeInterface for SimpleCard {
+    fn challenge(&self) -> Challenge {
+        Challenge::new(self.front.clone(), self.back.clone())
+    }
+}
+
+pub enum Card {
+    Simple(String, String),
+    Complex(String, Vec<String>),
+}
+
 #[derive(PartialEq, serde::Deserialize)]
 pub struct SimpleCard {
     front: String,
@@ -7,7 +33,7 @@ pub struct SimpleCard {
     tags: Vec<String>,
 }
 
-impl Card for SimpleCard {
+impl SimpleCard {
     fn new(front: String, back: String, tags: Vec<String>) -> SimpleCard {
         SimpleCard { front, back, tags }
     }
@@ -25,23 +51,11 @@ impl Card for SimpleCard {
     }
 }
 
-pub trait Card {
-    fn new(front: String, back: String, tags: Vec<String>) -> Self;
-    fn push_tag(&mut self, tag: String);
-    fn get_front(&self) -> &String;
-    fn get_back(&self) -> &String;
-    fn is_valid(&self, answer: &String) -> bool;
-}
-
-pub trait Validator {
-    fn is_valid(&self, tag: &String) -> bool;
-}
-
 #[cfg(test)]
 mod tests {
-    use super::{Card, SimpleCard};
+    use super::SimpleCard;
     #[test]
-    fn make_card() {
+    fn make_simple_card() {
         let front: String = "Foo".into();
         let back: String = "Bar".into();
         let tags: Vec<String> = vec![];
