@@ -1,7 +1,4 @@
-mod core;
-use crate::core::cards;
 use clap::Parser;
-use csv;
 use std::io;
 
 #[derive(Debug, Parser)]
@@ -20,11 +17,6 @@ fn main() {
     println!("{}", &flashcards_filepath);
 
     // TODO flashcard reader needs to be implemented after core game loop...
-}
-
-enum Schedule {
-    Linear,
-    Random,
 }
 
 fn read_to_buff(buff: &mut String) {
