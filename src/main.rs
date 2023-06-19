@@ -1,5 +1,5 @@
 use clap::Parser;
-use kadeu::{Card, CardMaker};
+use kadeu::{Card, CardMaker, validate};
 use std::io::{self, Write};
 
 // Need simple app that can tell stdout what to render next.
@@ -17,36 +17,24 @@ struct GameArgs {
 fn main() {
     let args = GameArgs::parse();
 
-    //let card: SimpleCard = SimpleCard::new(
-        //"What group of organism is a fungus".to_string(),
-        //"eukaryotic".to_string(),
-    //);
-    //let next_card = SimpleCard::new(
-        //"What is Cytahus collocially known as?".to_string(),
-        //"Bird's nest fungi".to_string(),
-    //);
-//
-    //let cards = vec![card, next_card];
-//
-    //for card in cards {
-        //println!("!> {}", card.front());
-        //print!("?> ");
-        //let mut answer = String::new();
-        //io::stdout().flush().expect("stdout flush");
-        //read_to_buff(&mut answer);
-        //println!("> {}", card.back());
-        //// No reason to ask if yay or no if no benefit
-        //io::stdout().flush().expect("stdout flush");
-        //// just print the next question or wait for a continue?
-        //// might be useful to have when going into more advanced terminal interfaces.
-        //read_to_buff(&mut answer);
-//
-        //// answer
-        //// feedback
-        //// continue
-    //}
-    //let flashcards_filepath = args.flashcards;
-    // TODO flashcard reader needs to be implemented after core game loop...
+    let questions: Vec<(&str, &str)> = vec![
+        ("What group of organism is a fungus", "eukaryotic")
+    ];
+
+    for question in questions {
+        let card: Card<String> = Card::new(
+            question.0.to_string(),
+            question.1.to_string()
+        );
+
+        println!("!> {}", card.front());
+        print!("?> ");
+        io::stdout().flush().expect("stdout flush");
+        let mut answer: String = String::new();
+        read_to_buff(&mut answer);
+        println!("Answer> {}", card.back());
+    }
+
 }
 
 fn read_to_buff(buff: &mut String) {
