@@ -1,5 +1,5 @@
 use clap::Parser;
-use kadeu::{SimpleCard, CardMaker};
+use kadeu::{Card, CardMaker};
 use std::io::{self, Write};
 
 // Need simple app that can tell stdout what to render next.
@@ -44,7 +44,7 @@ fn main() {
         //// answer
         //// feedback
         //// continue
-    }
+    //}
     //let flashcards_filepath = args.flashcards;
     // TODO flashcard reader needs to be implemented after core game loop...
 }
