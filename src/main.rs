@@ -1,6 +1,7 @@
 use clap::Parser;
 use kadeu::{Card, CardMaker, CanDisplay};
-use kadeu::game::{Judge, Score};
+use kadeu::game::{Judge, Score, Compliancy};
+use kadeu::game;
 use std::fmt::Display;
 use std::io::{self, Write};
 
@@ -35,11 +36,10 @@ fn main() {
         ("What group of organism is a fungus", "eukaryotic")
     ];
 
-
     for question in questions {
-        let card: Card<u32> = Card::new(
+        let card: Card<String> = Card::new(
             "How many people have served the President of the USA?".to_string(),
-            45
+            "45".to_string()
         );
 
         println!("!> {}", card.front());
@@ -47,9 +47,14 @@ fn main() {
 
         io::stdout().flush().expect("stdout flush");
         let mut answer: String = String::new();
-
         read_to_buff(&mut answer);
-        println!("Answer> {}", card.back());
+
+        let compliancy: Compliancy = Compliancy::Strict;
+        // TODO ref?
+        let score = card.score(answer.to_owned(), compliancy);
+
+        // TODO this is saying incorrect when it should be correct... probably has to do with input
+        println!("Answer> {} -- {}", card.back(), score.to_string());
     }
 
 }
