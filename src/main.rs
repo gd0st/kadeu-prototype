@@ -1,5 +1,7 @@
 use clap::Parser;
-use kadeu::{Card, CardMaker, validate};
+use kadeu::{Card, CardMaker, CanDisplay};
+use kadeu::game::{Judge, Score};
+use std::fmt::Display;
 use std::io::{self, Write};
 
 // Need simple app that can tell stdout what to render next.
@@ -14,23 +16,38 @@ struct GameArgs {
     //#[arg(long)]
     //shuffle: bool,
 }
+
+enum KadeuCard {
+    Simple(String, String),
+    Multi(String, Vec<String>)
+}
+
+
 fn main() {
     let args = GameArgs::parse();
 
+
+    let question = KadeuCard::Simple(
+        "What group of organism is a fungus".to_string(),
+        "eukaryotic".to_string()
+    );
     let questions: Vec<(&str, &str)> = vec![
         ("What group of organism is a fungus", "eukaryotic")
     ];
 
+
     for question in questions {
-        let card: Card<String> = Card::new(
-            question.0.to_string(),
-            question.1.to_string()
+        let card: Card<u32> = Card::new(
+            "How many people have served the President of the USA?".to_string(),
+            45
         );
 
         println!("!> {}", card.front());
         print!("?> ");
+
         io::stdout().flush().expect("stdout flush");
         let mut answer: String = String::new();
+
         read_to_buff(&mut answer);
         println!("Answer> {}", card.back());
     }
