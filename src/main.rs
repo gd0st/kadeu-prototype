@@ -1,7 +1,5 @@
 use clap::Parser;
-use kadeu::{Card, CardMaker, CanDisplay};
-use kadeu::game::{Judge, Score, Compliancy};
-use kadeu::game;
+use kadeu::{KCard, Kadeu};
 use std::fmt::Display;
 use std::io::{self, Write};
 
@@ -18,45 +16,48 @@ struct GameArgs {
     //shuffle: bool,
 }
 
-enum KadeuCard {
-    Simple(String, String),
-    Multi(String, Vec<String>)
+enum Score {
+    Accurate,
+    Miss,
 }
 
+fn get_cards(filepath: String) -> Vec<KCard> {
+    todo!()
+}
+
+// Compliancy here.
 
 fn main() {
     let args = GameArgs::parse();
 
-
-    let question = KadeuCard::Simple(
-        "What group of organism is a fungus".to_string(),
-        "eukaryotic".to_string()
+    let fcard = KCard::Simple(
+        "Who is the 44th president.".to_string(),
+        "Barack Obama".to_string(),
     );
-    let questions: Vec<(&str, &str)> = vec![
-        ("What group of organism is a fungus", "eukaryotic")
-    ];
+    let scard = KCard::Simple(
+        "What is capital of Germany".to_string(),
+        "Berlin".to_string(),
+    );
+    let tcard = KCard::List(
+        "Name a state in the DMV.".to_string(),
+        vec![
+            "Maryland".to_string(),
+            "Virginia".to_string(),
+            "DC".to_string(),
+        ],
+    );
 
-    for question in questions {
-        let card: Card<String> = Card::new(
-            "How many people have served the President of the USA?".to_string(),
-            "45".to_string()
-        );
+    let kadeus: Vec<KCard> = vec![fcard, scard, tcard];
 
-        println!("!> {}", card.front());
-        print!("?> ");
-
-        io::stdout().flush().expect("stdout flush");
-        let mut answer: String = String::new();
+    for kadeu in kadeus {
+        let card = kadeu.make();
+        println!("{}", card.front());
+        println!("{}", card.back());
+        let mut answer = String::new();
+        io::stdout().flush().expect("Stdout flushed");
         read_to_buff(&mut answer);
-
-        let compliancy: Compliancy = Compliancy::Strict;
-        // TODO ref?
-        let score = card.score(answer.to_owned(), compliancy);
-
-        // TODO this is saying incorrect when it should be correct... probably has to do with input
-        println!("Answer> {} -- {}", card.back(), score.to_string());
+        let score = card.score(answer);
     }
-
 }
 
 fn read_to_buff(buff: &mut String) {
