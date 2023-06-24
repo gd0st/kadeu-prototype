@@ -1,4 +1,6 @@
 use std::{backtrace::Backtrace, fmt::Display};
+pub mod de_csv;
+pub mod kadeu;
 
 pub enum Compliancy {
     Strict,
@@ -54,24 +56,6 @@ impl<T: PartialEq> Card for CardList<T> {
     fn value(&self) -> &Self::BACK {
         &self.1
     }
-
-    //fn score(&self, answer: Self::BACK, compliancy: Compliancy) -> Score {
-    //let total = self.1.len();
-    //let mut hit = 0;
-    //
-    //answer.iter().for_each(|answer| {
-    //if self.1.iter().any(|value| value == answer) {
-    //hit += 1;
-    //}
-    //});
-    //
-    //let ratio = (hit / total) as f64;
-    //if compliancy.passed(ratio) {
-    //Score::Accurate
-    //} else {
-    //Score::Miss
-    //}
-    //}
 }
 
 pub struct SimpleCard<T>(String, T);
