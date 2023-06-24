@@ -1,11 +1,15 @@
 use clap::Parser;
 use kadeu::de_csv;
 use kadeu::kadeu::{KCard, Kadeu};
+use kadeu::util::{read_filepath, read_to_buff};
 use std::io::{self, Write};
 
 #[derive(Debug, Parser)]
 #[command(author, version)]
-struct GameArgs {
+struct Args {
+    // Filepath of the deck that is to be parsed.
+    #[arg(short, long)]
+    flashcards: String,
     // TODO allow for flashcard csv file.
     //#[arg(long)]
     //flashcards: String,
@@ -14,32 +18,22 @@ struct GameArgs {
 }
 
 fn main() {
-    let question = KCard::Card("Who is the 44th President".to_string(), "Obama".to_string());
-    let squestion = KCard::Card("How many states are in the USA".to_string(), 50);
-
-    let cards: Vec<Box<dyn Kadeu>> = vec![question.make(), squestion.make()];
-
+    let args = Args::parse();
+    println!("{}", args.flashcards);
+    let contents = read_filepath(args.flashcards).expect("--filepath contents");
+    // TODO json parser, yaml parser etc. A general deserializer implementation would be nice.
+    let cards = de_csv::parse_csv_data(contents.as_str());
     for card in cards {
         let mut answer = String::new();
         println!("!> {}", card.front());
         print!("?: ");
         io::stdout().flush().expect("Flushed stdout");
         read_to_buff(&mut answer);
-        let score = card.score(answer).expect("Score response from Kadeu");
-        println!("{}", score.to_string())
-    }
-}
-
-fn read_to_buff(buff: &mut String) {
-    let _ = io::stdin()
-        .read_line(buff)
-        .expect("Attempting stdio input.");
-
-    if let Some('\n') = buff.chars().next_back() {
-        buff.pop();
-    }
-    if let Some('\r') = buff.chars().next_back() {
-        buff.pop();
+        let _ = card.score(answer).expect("Score response from Kadeu");
+        println!("=> {}", card.back());
+        // game state will allow for practice, test, etc.
+        // Scheduler will determine how the cards are organized.
+        // ignore_case etc will also be introduced for json cards.
     }
 }
 
