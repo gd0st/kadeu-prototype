@@ -40,7 +40,6 @@ pub trait Card {
     fn new(key: String, value: Self::BACK) -> Self;
     fn key(&self) -> &String;
     fn value(&self) -> &Self::BACK;
-    fn score(&self, answer: Self::BACK) -> Score;
 }
 
 pub struct CardList<T>(String, Vec<T>);
@@ -56,9 +55,23 @@ impl<T: PartialEq> Card for CardList<T> {
         &self.1
     }
 
-    fn score(&self, answer: Self::BACK) -> Score {
-        todo!()
-    }
+    //fn score(&self, answer: Self::BACK, compliancy: Compliancy) -> Score {
+    //let total = self.1.len();
+    //let mut hit = 0;
+    //
+    //answer.iter().for_each(|answer| {
+    //if self.1.iter().any(|value| value == answer) {
+    //hit += 1;
+    //}
+    //});
+    //
+    //let ratio = (hit / total) as f64;
+    //if compliancy.passed(ratio) {
+    //Score::Accurate
+    //} else {
+    //Score::Miss
+    //}
+    //}
 }
 
 pub struct SimpleCard<T>(String, T);
@@ -73,13 +86,6 @@ impl<T: PartialEq> Card for SimpleCard<T> {
     }
     fn value(&self) -> &Self::BACK {
         &self.1
-    }
-    fn score(&self, answer: Self::BACK) -> Score {
-        if self.1 == answer {
-            Score::Accurate
-        } else {
-            Score::Miss
-        }
     }
 }
 
