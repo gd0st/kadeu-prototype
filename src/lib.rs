@@ -1,7 +1,5 @@
 use std::{backtrace::Backtrace, fmt::Display};
 
-use cards::MakeCard;
-
 pub enum Compliancy {
     Strict,
     Minimum(f64),
@@ -22,98 +20,86 @@ pub enum Score {
     Miss, // Maybe a valu that can say /how/ accurate it was.
 }
 
+impl Into<String> for Score {
+    fn into(self) -> String {
+        self.to_string()
+    }
+}
+
 impl Score {
     pub fn to_string(self) -> String {
         match self {
-            Score::Accurate => "Correct".into(),
-            Score::Miss => "Incorrect".into(),
+            Score::Accurate => "Hit".into(),
+            Score::Miss => "Miss".into(),
         }
     }
 }
 
-pub trait Kadeu {
-    fn front(&self) -> &String;
-    fn back(&self) -> Box<dyn Display>;
-    fn score(&self, answer: String) -> game::Score;
+pub trait Card {
+    type BACK;
+    fn new(key: String, value: Self::BACK) -> Self;
+    fn key(&self) -> &String;
+    fn value(&self) -> &Self::BACK;
+    fn score(&self, answer: Self::BACK) -> Score;
 }
 
-pub mod game {
+pub struct CardList<T>(String, Vec<T>);
+impl<T: PartialEq> Card for CardList<T> {
+    type BACK = Vec<T>;
+    fn new(key: String, value: Self::BACK) -> Self {
+        CardList(key, value)
+    }
+    fn key(&self) -> &String {
+        &self.0
+    }
+    fn value(&self) -> &Self::BACK {
+        &self.1
+    }
 
-    pub enum Score {
-        Accurate,
-        Miss,
+    fn score(&self, answer: Self::BACK) -> Score {
+        todo!()
     }
 }
 
-pub enum KCard {
-    Simple(String, String),
-    List(String, Vec<String>),
-}
+pub struct SimpleCard<T>(String, T);
 
-impl KCard {
-    pub fn make(self) -> Box<dyn Kadeu> {
-        match self {
-            KCard::Simple(front, back) => Box::new(cards::Card::<String>::new(front, back)),
-            KCard::List(front, back) => Box::new(cards::ListCard::<String>::new(front, back)),
+impl<T: PartialEq> Card for SimpleCard<T> {
+    type BACK = T;
+    fn new(key: String, value: Self::BACK) -> Self {
+        SimpleCard(key, value)
+    }
+    fn key(&self) -> &String {
+        &self.0
+    }
+    fn value(&self) -> &Self::BACK {
+        &self.1
+    }
+    fn score(&self, answer: Self::BACK) -> Score {
+        if self.1 == answer {
+            Score::Accurate
+        } else {
+            Score::Miss
         }
     }
 }
 
-pub mod cards {
-    use crate::Kadeu;
-    use std::fmt::Display;
+#[cfg(test)]
+mod test {
+    use crate::{Card, CardList, SimpleCard};
 
-    pub trait MakeCard {
-        type BACK;
-        fn new(key: String, value: Self::BACK) -> Self;
+    #[test]
+    fn make_simple_card() {
+        let front = "foo";
+        let back = "bar".to_string();
+        let card = SimpleCard::new(front.to_string(), back);
+        assert_eq!(front.to_string(), *card.key())
     }
 
-    pub struct ListCard<T> {
-        key: String,
-        value: Vec<T>,
+    #[test]
+    fn make_list_card() {
+        let front = "foo";
+        let back = vec![String::from("bar")];
+        let card = CardList::new(front.to_string(), back);
+        assert_eq!(front.to_string(), *card.key())
     }
-    impl<T: PartialEq> MakeCard for ListCard<T> {
-        type BACK = Vec<T>;
-        fn new(key: String, value: Vec<T>) -> ListCard<T> {
-            ListCard { key, value }
-        }
-    }
-    impl<T> Kadeu for ListCard<T> {
-        fn front(&self) -> &String {
-            &self.key
-        }
-        fn back(&self) -> Box<dyn Display> {
-            Box::new("foobar".to_string())
-        }
-
-        fn score(&self, answer: String) -> crate::game::Score {
-            todo!()
-        }
-    }
-
-    pub struct Card<T> {
-        key: String,
-        value: T,
-    }
-
-    impl<T: PartialEq> MakeCard for Card<T> {
-        type BACK = T;
-        fn new(key: String, value: Self::BACK) -> Card<T> {
-            Card { key, value }
-        }
-    }
-
-    impl<T> Kadeu for Card<T> {
-        fn front(&self) -> &String {
-            &self.key
-        }
-        fn back(&self) -> Box<dyn Display> {
-            Box::new("foobar".to_string())
-        }
-
-        fn score(&self, answer: String) -> crate::game::Score {
-            todo!()
-        }
-    }
-    //TODO reimpl tests here.
 }

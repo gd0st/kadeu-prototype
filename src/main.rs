@@ -1,6 +1,5 @@
 use clap::Parser;
-use kadeu::{KCard, Kadeu};
-use std::fmt::Display;
+use kadeu::{Card, SimpleCard};
 use std::io::{self, Write};
 
 // Need simple app that can tell stdout what to render next.
@@ -16,47 +15,35 @@ struct GameArgs {
     //shuffle: bool,
 }
 
-enum Score {
-    Accurate,
-    Miss,
-}
-
-fn get_cards(filepath: String) -> Vec<KCard> {
-    todo!()
-}
-
 // Compliancy here.
 
+trait Kadeu {
+    fn front(&self) -> String;
+    fn back(&self) -> String;
+}
+
+impl Kadeu for SimpleCard<String> {
+    fn front(&self) -> String {
+        self.key().to_owned()
+    }
+    fn back(&self) -> String {
+        self.value().to_owned()
+    }
+}
+
+pub enum KCard<T> {
+    Card(String, T),
+    CardList(String, Vec<T>),
+}
+
 fn main() {
-    let args = GameArgs::parse();
-
-    let fcard = KCard::Simple(
-        "Who is the 44th president.".to_string(),
-        "Barack Obama".to_string(),
-    );
-    let scard = KCard::Simple(
-        "What is capital of Germany".to_string(),
-        "Berlin".to_string(),
-    );
-    let tcard = KCard::List(
-        "Name a state in the DMV.".to_string(),
-        vec![
-            "Maryland".to_string(),
-            "Virginia".to_string(),
-            "DC".to_string(),
-        ],
-    );
-
-    let kadeus: Vec<KCard> = vec![fcard, scard, tcard];
-
-    for kadeu in kadeus {
-        let card = kadeu.make();
+    let question = KCard::Card("foo".to_string(), "bar".to_string());
+    if let KCard::Card(front, back) = question {
+        let card: SimpleCard<String> = SimpleCard::new(front, back);
+        let score: String = card.score("bar".to_string()).into();
         println!("{}", card.front());
         println!("{}", card.back());
-        let mut answer = String::new();
-        io::stdout().flush().expect("Stdout flushed");
-        read_to_buff(&mut answer);
-        let score = card.score(answer);
+        println!("{}", score);
     }
 }
 
