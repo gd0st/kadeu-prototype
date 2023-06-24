@@ -1,6 +1,7 @@
 use std::{backtrace::Backtrace, fmt::Display};
 pub mod de_csv;
 pub mod kadeu;
+pub mod util;
 
 pub enum Compliancy {
     Strict,
