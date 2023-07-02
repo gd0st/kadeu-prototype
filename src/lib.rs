@@ -1,53 +1,46 @@
 use serde::{Deserialize, Serialize};
-pub mod card;
-use serde_json;
+pub mod de_json;
 
-enum Score {
-    Hit,
-    Partial(f64),
-    Miss,
-}
-trait DeckMaker<T> {
-    fn make_deck(bytes: &str) -> Deck<T>;
-}
-
-#[derive(Deserialize, Serialize)]
-enum KCard<T> {
-    Simple(String, T),
-}
-
-#[derive(Deserialize, Serialize)]
-struct Deck<T> {
-    title: String,
-    cards: Vec<KCard<T>>,
-}
-
-trait Kadeu {
+pub trait Kadeu {
     fn front(&self) -> &String;
     fn back(&self) -> String;
-    fn score(&self, answer: String) -> Score;
+    fn score(&self, answer: String) -> Result<bool, ()>;
 }
 
-#[cfg(test)]
-mod test {
+pub trait KadeuDeck {
+    fn title(&self) -> &String;
+    fn cards(&self) -> Vec<Box<dyn Kadeu>>;
+}
+
+mod game {
     use super::*;
-    #[test]
-    fn simple_card() {
-        let data = r#"
-{
-  "title": "foo",
-  "cards": [
-  {
-  "front": "foo",
-  "back": "bar"
-},
-{
-"front": "foo",
-"back": ["bar"]
-}
-]
+    enum Mode {
+        Practice,
+        Test,
+        Hardcore,
+    }
+    struct Game {
+        cards: Vec<Box<dyn Kadeu>>,
+        mode: Mode,
+    }
 
-}
-"#;
+    impl Game {
+        fn new(cards: Vec<Box<dyn Kadeu>>, mode: Mode) -> Game {
+            Game { cards, mode }
+        }
+    }
+
+    impl Iterator for Game {
+        type Item = String;
+        fn next(&mut self) -> Option<Self::Item> {
+            match self.cards.pop() {
+                Some(card) => {
+                    let prompt = card.front().to_owned();
+                    self.cards.push(card);
+                    Some(prompt)
+                }
+                None => None,
+            }
+        }
     }
 }
