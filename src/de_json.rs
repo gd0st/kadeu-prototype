@@ -1,4 +1,13 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
+
+#[derive(Deserialize, Serialize)]
+#[serde(untagged)]
+enum CardFront<T> {
+    Simple(T),
+    Complex { display: T, options: Vec<T> },
+}
 
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all = "lowercase")]
@@ -12,11 +21,23 @@ enum Compliance {
 #[serde(untagged)]
 enum CardBack<T> {
     Simple(T),
-    Multi(Vec<T>),
+    Complex(HashMap<String, HashMap<String, String>>),
 }
+
+impl CardBack<String> {
+    fn make(self) -> String {
+        match self {
+            CardBack::Complex(map) => {
+                todo!()
+            }
+            _ => todo!(),
+        }
+    }
+}
+
 #[derive(Deserialize, Serialize)]
 struct Card<T> {
-    front: String,
+    front: CardFront<T>,
     back: CardBack<T>,
     compliance: Option<Compliance>,
 }
@@ -35,7 +56,7 @@ trait Kadeu {
 
 impl Kadeu for Card<String> {
     fn front(&self) -> &String {
-        &self.front
+        todo!()
     }
     fn back(&self) -> String {
         match &self.back {
@@ -58,12 +79,22 @@ mod test {
   "cards": [
     {
       "front": "foo",
-      "back": ["bar"],
-      "compliance": { "min": 32 }
+      "back": "bar"
     },
     {
-      "front": "foo",
-      "back": "bar"
+        "front": {
+            "display": "$1, Present",
+            "options": ["Yo", "Tu", "Il/Elle/Usted", "Nosotros", "Ellos/Ellas/Ustedes"]
+        },
+        "back": {
+            {
+                "Yo": "Estoy",
+                "Tu": "Estas",
+                "Il/Elle/Usted": "Esta",
+                "Nosotros": "Estamos",
+                "Ellos/Ellas/Ustedes": "Estan"
+            }
+        }
     }
   ]
 }
