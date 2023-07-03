@@ -1,51 +1,49 @@
 use serde::{Deserialize, Serialize};
-use serde_json;
-
-use crate::{Kadeu, KadeuDeck};
 
 #[derive(Deserialize, Serialize)]
-struct Deck {
-    title: String,
-    cards: Vec<Card>,
+#[serde(rename_all = "lowercase")]
+enum Compliance {
+    Min(f32),
+    Max(f32),
+    Strict,
 }
 
-impl KadeuDeck for Deck {
-    fn title(&self) -> &String {
-        &self.title
-    }
-    fn cards(&self) -> Vec<Box<dyn Kadeu>> {
-        let mut vec: Vec<Box<dyn Kadeu>> = vec![];
-        for card in &self.cards {
-            let new_card: Box<dyn Kadeu> = Box::new(card.to_owned());
-            vec.push(new_card);
-        }
-        vec
-    }
+#[derive(Deserialize, Serialize)]
+#[serde(untagged)]
+enum CardBack<T> {
+    Simple(T),
+    Multi(Vec<T>),
 }
-
-#[derive(Deserialize, Serialize, Clone)]
-struct Card {
+#[derive(Deserialize, Serialize)]
+struct Card<T> {
     front: String,
-    back: serde_json::Value,
+    back: CardBack<T>,
+    compliance: Option<Compliance>,
 }
 
-impl Kadeu for Card {
+#[derive(Deserialize, Serialize)]
+struct Deck<T> {
+    title: String,
+    cards: Vec<Card<T>>,
+}
+
+trait Kadeu {
+    fn front(&self) -> &String;
+    fn back(&self) -> String;
+    fn answer(&self, answer: String);
+}
+
+impl Kadeu for Card<String> {
     fn front(&self) -> &String {
         &self.front
     }
-
     fn back(&self) -> String {
         match &self.back {
-            serde_json::Value::Null => "".into(),
-            serde_json::Value::Number(s) => s.to_string(),
-            serde_json::Value::String(s) => s.to_string(),
-            _ => "No Kadeu Support".into(),
+            CardBack::Simple(s) => s.to_string(),
+            _ => todo!(),
         }
     }
-
-    fn score(&self, answer: String) -> Result<bool, ()> {
-        Ok(true)
-    }
+    fn answer(&self, answer: String) {}
 }
 
 #[cfg(test)]
@@ -60,7 +58,8 @@ mod test {
   "cards": [
     {
       "front": "foo",
-      "back": ["bar"]
+      "back": ["bar"],
+      "compliance": { "min": 32 }
     },
     {
       "front": "foo",
@@ -69,6 +68,6 @@ mod test {
   ]
 }
 "#;
-        let _: Deck = serde_json::from_str(data).unwrap();
+        let _: Deck<String> = serde_json::from_str(data).unwrap();
     }
 }

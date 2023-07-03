@@ -12,6 +12,26 @@ pub trait KadeuDeck {
     fn cards(&self) -> Vec<Box<dyn Kadeu>>;
 }
 
+#[derive(Deserialize, Serialize)]
+pub struct Card<T> {
+    key: String,
+    value: T,
+}
+
+impl<T> Card<T> {
+    pub fn new(key: String, value: T) -> Self {
+        Card { key, value }
+    }
+
+    pub fn key(&self) -> &String {
+        &self.key
+    }
+
+    pub fn value(&self) -> &T {
+        &self.value
+    }
+}
+
 mod game {
     use super::*;
     enum Mode {
