@@ -1,10 +1,6 @@
 use clap::Parser;
-use kadeu::{
-    card::{Card, Deck},
-    de,
-    de::DeckDeserializer,
-    util, Kadeu,
-};
+use kadeu::game;
+use kadeu::{de, de::DeckDeserializer, util, Card, Kadeu, KadeuDeck};
 
 use std::io::{self, Write};
 #[derive(Parser, Debug)]
@@ -16,20 +12,20 @@ fn main() {
     let args = Arg::parse();
     let filedata =
         util::read_filepath(args.flashcards).expect("Read file data from --flashcard path.");
-    let deck = de::json::Json::deserialize(filedata.as_str())
+    let deck = de::Json::deserialize(filedata.as_str())
         .expect("Deck<String> resolved from json filedata.");
-
-    for card in deck.cards() {
-        println!("!>{}", card.front());
+    let game = game::Game::new(deck.cards(), game::Mode::Practice);
+    for card in game.cards() {
         let mut answer: String = String::new();
-
+        println!("!>{}", card.front());
         print!("?>");
         let _ = io::stdout().flush();
         util::read_to_buff(&mut answer);
-        if card.score(answer) {
+        let score = card.score(answer);
+        if score {
             println!("Correct!");
         } else {
-            println!("Incorrect: {}", card.back());
+            println!("Incorrect");
         }
     }
 }
