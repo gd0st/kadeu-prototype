@@ -10,13 +10,13 @@ clap = { version = "4.3.0", features = ["derive"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0.93"
 csv = "1.1"
+rand = { version = "0.7.3", default-features = false, features = ["std"] }
 
 # Too much right now :(
 #crossbeam = "0.8"
 #config = { version = "0.13.3" }
 #chrono = { version = "0.4", features = ["serde"] }
 #termion = "*"
-#rand = { version = "0.7.3", default-features = false, features = ["std"] }
 #thiserror = "1.0"
 #tui = "0.19" # These reqs might change later depending on the new project.
 #crossterm = "0.25"

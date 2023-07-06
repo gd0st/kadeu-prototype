@@ -1,12 +1,15 @@
 use clap::Parser;
 use kadeu::game;
 use kadeu::{de, de::DeckDeserializer, util, Card, Kadeu, KadeuDeck};
+use rand::{seq::SliceRandom, thread_rng};
 
 use std::io::{self, Write};
 #[derive(Parser, Debug)]
 struct Arg {
     #[arg(short, long)]
     flashcards: String,
+    #[arg(long)]
+    shuffle: bool,
 }
 fn main() {
     let args = Arg::parse();
@@ -14,18 +17,19 @@ fn main() {
         util::read_filepath(args.flashcards).expect("Read file data from --flashcard path.");
     let deck = de::Json::deserialize(filedata.as_str())
         .expect("Deck<String> resolved from json filedata.");
-    let game = game::Game::new(deck.cards(), game::Mode::Practice);
-    for card in game.cards() {
+    let mut cards = deck.cards();
+    cards.shuffle(&mut thread_rng());
+    for card in cards {
         let mut answer: String = String::new();
         println!("!>{}", card.front());
-        print!("?>");
+        print!("$>");
         let _ = io::stdout().flush();
         util::read_to_buff(&mut answer);
         let score = card.score(answer);
         if score {
-            println!("Correct!");
+            println!("OK!");
         } else {
-            println!("Incorrect");
+            println!("!!! {}", card.back());
         }
     }
 }

@@ -1,4 +1,4 @@
-use crate::{Card, Deck, Kadeu, KadeuDeck};
+use crate::{Card, CardModifier, Deck, Kadeu, KadeuDeck};
 use serde::{Deserialize, Serialize};
 
 impl KadeuDeck for Deck<String, String> {
@@ -26,7 +26,16 @@ impl Kadeu for Card<String, String> {
     }
 
     fn score(&self, answer: String) -> bool {
-        if self.back == answer {
+        let mut target = self.back.to_owned();
+        // TODO make a generic Modifier (&T) -> T
+        if let Some(modifiers) = &self.modifiers {
+            for modfier in modifiers {
+                match modfier {
+                    CardModifier::IgnoreCase => target = target.to_lowercase(),
+                }
+            }
+        }
+        if target == answer {
             true
         } else {
             false

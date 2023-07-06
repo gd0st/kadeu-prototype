@@ -13,9 +13,15 @@ pub trait KadeuDeck {
 }
 
 #[derive(Deserialize, Serialize, Clone)]
+#[serde(rename_all = "snake_case")]
+pub enum CardModifier {
+    IgnoreCase,
+}
+#[derive(Deserialize, Serialize, Clone)]
 pub struct Card<U, T> {
     front: U,
     back: T,
+    modifiers: Option<Vec<CardModifier>>,
 }
 
 #[derive(Deserialize, Serialize)]
