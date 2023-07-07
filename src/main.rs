@@ -1,7 +1,6 @@
 use clap::Parser;
 use kadeu::game;
-use kadeu::{de, de::DeckDeserializer, util, Card, Kadeu, KadeuDeck};
-use rand::{seq::SliceRandom, thread_rng};
+use kadeu::{util, Card, Deck, Kadeu};
 
 use std::io::{self, Write};
 #[derive(Parser, Debug)]
@@ -15,10 +14,11 @@ fn main() {
     let args = Arg::parse();
     let filedata =
         util::read_filepath(args.flashcards).expect("Read file data from --flashcard path.");
-    let deck = de::Json::deserialize(filedata.as_str())
-        .expect("Deck<String> resolved from json filedata.");
-    let mut cards = deck.cards();
-    cards.shuffle(&mut thread_rng());
+    let mut deck: Deck<Card<String, String>> = serde_json::from_str(&filedata).unwrap();
+    if args.shuffle {
+        deck.shuffle();
+    }
+    let cards = deck.cards();
     for card in cards {
         let mut answer: String = String::new();
         println!("!>{}", card.front());

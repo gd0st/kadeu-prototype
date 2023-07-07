@@ -1,5 +1,6 @@
 pub mod de;
 pub mod util;
+use rand::{seq::SliceRandom, thread_rng};
 use serde::{Deserialize, Serialize};
 
 pub trait Kadeu {
@@ -8,10 +9,14 @@ pub trait Kadeu {
     fn score(&self, answer: String) -> bool;
 }
 
-pub trait KadeuDeck {
-    fn cards(&self) -> Vec<Box<dyn Kadeu>>;
+enum FileFormat {
+    Json,
 }
 
+struct KFile {
+    filepath: String,
+    format: FileFormat,
+}
 #[derive(Deserialize, Serialize, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum CardModifier {
@@ -25,12 +30,33 @@ pub struct Card<U, T> {
 }
 
 #[derive(Deserialize, Serialize)]
-struct Deck<String, T> {
+pub struct Deck<T> {
     title: String,
-    cards: Vec<Card<String, T>>,
+    cards: Vec<T>,
+}
+
+impl<T: Clone> Deck<T> {}
+
+impl<T> Deck<T> {
+    pub fn cards(&self) -> &Vec<T> {
+        &self.cards
+    }
+    pub fn shuffle(&mut self) {
+        self.cards.shuffle(&mut thread_rng())
+    }
+
+    fn push(&mut self, card: T) {
+        self.cards.push(card)
+    }
+
+    fn pop(&mut self) -> Option<T> {
+        self.cards.pop()
+    }
 }
 
 pub mod game {
+    use std::collections::btree_map::Iter;
+
     use super::*;
     #[derive(Debug, Clone)]
     pub enum Mode {
@@ -38,26 +64,36 @@ pub mod game {
         Test,
         Hardcore,
     }
-    pub struct Game {
-        cards: Vec<Box<dyn Kadeu>>,
-        mode: Mode,
+    pub struct CardGame<T> {
+        deck: Deck<T>,
+        mode: Option<Mode>,
     }
 
-    impl Game {
-        pub fn new(cards: Vec<Box<dyn Kadeu>>, mode: Mode) -> Game {
-            Game { cards, mode }
-        }
+    impl<T: Kadeu> CardGame<T> {
         pub fn answer(&mut self, answer: String) -> bool {
-            let card = self.cards.pop();
+            let card = self.deck.pop();
             if let Some(card) = card {
                 let score = card.score(answer);
-                self.cards.push(card);
+                self.deck.push(card);
                 return score;
             }
             false
         }
-        pub fn cards(&self) -> &Vec<Box<dyn Kadeu>> {
-            &self.cards
+    }
+
+    impl<T> CardGame<T> {
+        pub fn new(deck: Deck<T>) -> Self {
+            CardGame { deck, mode: None }
+        }
+
+        pub fn mode(self, mode: Mode) -> Self {
+            CardGame {
+                deck: self.deck,
+                mode: Some(mode),
+            }
+        }
+        pub fn cards(&self) -> &Vec<T> {
+            &self.deck.cards()
         }
     }
 }
