@@ -1,50 +1,72 @@
-use crate::{Card, Deck, Kadeu, KadeuDeck};
-use serde::{Deserialize, Serialize};
+use crate::cards::back::CardBack;
+use crate::cards::cards::Deck;
+use crate::errors::KadeuError;
+use serde::Deserialize;
+use serde_yaml;
 
-impl KadeuDeck for Deck<String, String> {
-    fn cards(&self) -> Vec<Box<dyn Kadeu>> {
-        let mut cards: Vec<Box<dyn Kadeu>> = vec![];
-        for card in self.cards.iter() {
-            cards.push(Box::new(card.to_owned()))
+pub enum FileFormat {
+    Json,
+    Yaml,
+}
+
+pub struct FileParser<'a> {
+    file_format: FileFormat,
+    text: &'a str,
+}
+
+impl<'de> FileParser<'de> {
+    pub fn new(text: &'de str, file_format: FileFormat) -> Self {
+        FileParser { text, file_format }
+    }
+    pub fn parse<T, U>(&self) -> Result<Deck<T, U>, KadeuError>
+    where
+        T: Deserialize<'de>,
+        U: Deserialize<'de>,
+    {
+        let mut deck: Option<Deck<T, U>> = None;
+
+        //TODO I am in hell right now.
+        match self.file_format {
+            FileFormat::Json => Json::parse(self.text),
+            FileFormat::Yaml => Yaml::parse(self.text),
+            _ => Err(KadeuError::ParsingError(
+                "File Format missing parsing engine".to_string(),
+            )),
         }
-        cards
     }
 }
 
-#[derive(Debug)]
-pub enum DeError {
-    ParsingError(String),
+pub trait Parser {
+    fn parse<'de, T, U>(text: &'de str) -> Result<Deck<T, U>, KadeuError>
+    where
+        T: Deserialize<'de>,
+        U: Deserialize<'de>;
 }
 
-impl Kadeu for Card<String, String> {
-    fn front(&self) -> String {
-        self.front.to_owned()
-    }
-
-    fn back(&self) -> String {
-        self.back.to_owned()
-    }
-
-    fn score(&self, answer: String) -> bool {
-        if self.back == answer {
-            true
-        } else {
-            false
+struct Json;
+impl Parser for Json {
+    fn parse<'de, T, U>(text: &'de str) -> Result<Deck<T, U>, KadeuError>
+    where
+        T: Deserialize<'de>,
+        U: Deserialize<'de>,
+    {
+        match serde_json::from_str(text) {
+            Ok(deck) => Ok(deck),
+            Err(msg) => Err(KadeuError::ParsingError(msg.to_string())),
         }
     }
 }
 
-pub trait DeckDeserializer<T> {
-    fn deserialize(bytes: &str) -> Result<Box<dyn KadeuDeck>, DeError>;
-}
-
-pub struct Json;
-impl DeckDeserializer<String> for Json {
-    fn deserialize(bytes: &str) -> Result<Box<dyn KadeuDeck>, DeError> {
-        let deck = serde_json::from_str::<Deck<String, String>>(bytes);
-        match deck {
-            Err(e) => Err(DeError::ParsingError(e.to_string())),
-            Ok(deck) => Ok(Box::new(deck)),
+struct Yaml;
+impl Parser for Yaml {
+    fn parse<'de, T, U>(text: &'de str) -> Result<Deck<T, U>, KadeuError>
+    where
+        T: Deserialize<'de>,
+        U: Deserialize<'de>,
+    {
+        match serde_yaml::from_str(text) {
+            Ok(deck) => Ok(deck),
+            Err(e) => Err(KadeuError::ParsingError(e.to_string())),
         }
     }
 }
