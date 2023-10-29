@@ -1,5 +1,6 @@
+use crate::decks::Card;
+use crate::KCard;
 use serde::{Deserialize, Serialize};
-use crate::game::{Score, KCard};
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 #[serde(untagged)]

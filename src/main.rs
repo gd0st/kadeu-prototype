@@ -2,8 +2,8 @@ use clap::{arg, Command, Parser};
 use kadeu::cards::back::CardBack;
 use kadeu::config::{get_config, Settings};
 use kadeu::de;
-use kadeu::game::{self, KCard, KDeck};
-use kadeu::load_deck;
+use kadeu::{list_deck_names, load_deck};
+use kadeu::{KadeuRepo, RepoSource};
 use std::env;
 use std::fs::{self, FileType};
 use std::io;
@@ -43,17 +43,14 @@ impl Environment {
 }
 
 fn main() {
-    let matches = cli().get_matches();
-
-    let default_config_path = ".config/kadeu/config.yml";
-    let kadeu_repo_root = ".kadeu";
-    let home_path = Environment::Home.get().unwrap().to_string();
-    println!("{}", &home_path);
-    println!("{}", &default_config_path);
-    let config = get_config(&format!("{}/{}", &home_path, default_config_path))
-        .expect("Kadeu Settings file parsed.");
-    let deck_name = "test.json";
-    let filepath = format!("{}/{}/{}", home_path, config.repo, deck_name);
-    println!("{}", &filepath);
-    let deck = load_deck(filepath.as_str());
+    //let home_path = Environment::Home.get().unwrap().to_string();
+    //let default_config_path = ".config/kadeu/config.yml";
+    //let config = get_config(&format!("{}/{}", &home_path, default_config_path))
+    //.expect("Kadeu Settings file parsed.");
+    //
+    //let matches = cli().get_matches();
+    //
+    //let repo_path = format!("{}/{}", &home_path, config.repo);
+    //let repo = KadeuRepo::new(repo_path, RepoSource::Local);
+    //repo.list();
 }
