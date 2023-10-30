@@ -4,6 +4,8 @@ pub mod errors;
 pub mod interface;
 pub mod model;
 
+use interface::{KCard, controller::{Controller, Strategy}, Linear};
+
 pub enum RepoSource {
     // TODO Will require network and async etc.
     Net,
@@ -23,6 +25,7 @@ impl RepoSource {
 pub struct KadeuRepo {
     source: RepoSource,
     path: String,
+
 }
 
 //impl KadeuRepo {

@@ -1,12 +1,11 @@
 use clap::{arg, Command, Parser};
-use kadeu::cards::back::CardBack;
-use kadeu::config::{get_config, Settings};
-use kadeu::de;
-use kadeu::{list_deck_names, load_deck};
-use kadeu::{KadeuRepo, RepoSource};
+use kadeu::interface::controller;
+use kadeu::interface::{Linear, controller::Controller};
 use std::env;
 use std::fs::{self, FileType};
 use std::io;
+use kadeu::model::{Card, Deck, CardBack};
+use kadeu::de;
 
 const CONFIG_FILENAME: &str = "config.yml";
 
@@ -24,9 +23,7 @@ fn cli() -> Command {
 #[derive(Parser, Debug)]
 struct Arg {
     #[arg(short, long)]
-    flashcards: String,
-    #[arg(long)]
-    shuffle: bool,
+    from: String,
 }
 
 enum Environment {
@@ -43,6 +40,15 @@ impl Environment {
 }
 
 fn main() {
+
+    let home_path = Environment::Home.get().unwrap().to_string();
+    let args = Arg::parse();
+    let text = fs::read_to_string(args.from).unwrap();
+    let deck: Deck<String, CardBack> = de::Parser::Json.parse(text.as_str()).unwrap();
+    let strategy = Linear;
+    let controller = Controller::new(deck.cards(), strategy);
+    println!("{:?}", controller.next());
+
     //let home_path = Environment::Home.get().unwrap().to_string();
     //let default_config_path = ".config/kadeu/config.yml";
     //let config = get_config(&format!("{}/{}", &home_path, default_config_path))

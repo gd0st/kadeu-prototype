@@ -25,34 +25,28 @@ pub struct Card<T, U> {
 }
 
 impl<T, U> Card<T, U> {
-    pub fn new(front: T, back: U) -> Self {
+    pub fn new(front: T, back: U, progress: Option<Progress>) -> Self {
         Card {
             front,
             back,
-            progress: None,
+            progress,
         }
-    }
-
-    pub fn success(&mut self) {
-        if let Some(mut progress) = self.progress {
-            progress.successes += 1;
-            progress.attempts += 1;
-        } else {
-            self.progress = Some(Progress {
-                successes: 1,
-                attempts: 1,
-            })
-        }
-    }
-    pub fn miss(&mut self) {
-        todo!()
-    }
-    pub fn front(&self) -> &T {
-        &self.front
     }
     pub fn back(&self) -> &U {
         &self.back
     }
+    pub fn front(&self) -> &T {
+        &self.front
+    }
+
+    pub fn update_progress(&mut self, progress: Progress) {
+        self.progress = Some(progress)
+    }
+
+    pub fn clear_progress(&mut self) {
+        self.progress = None;
+    }
+
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -65,8 +59,8 @@ pub struct Deck<T, U> {
 }
 
 impl<T, U> Deck<T, U> {
-    pub fn cards(&self) -> &Vec<Card<T, U>> {
-        &self.cards
+    pub fn cards(&self) -> Vec<&Card<T, U>> {
+        self.cards.iter().collect()
     }
 
     pub fn title(&self) -> &String {
@@ -74,17 +68,9 @@ impl<T, U> Deck<T, U> {
     }
 
     pub fn description(&self) -> Option<&String> {
-        if let Some(description) = self.description {
-            Some(&description)
-        } else {
-            None
-        }
+        self.description.as_ref()
     }
     pub fn author(&self) -> Option<&String> {
-        if let Some(author) = self.description {
-            Some(&author)
-        } else {
-            None
-        }
+        self.author.as_ref()
     }
 }
