@@ -1,11 +1,14 @@
+use model::Deck;
+
 pub mod config;
 pub mod de;
 pub mod errors;
-pub mod interface;
+pub mod game;
 pub mod model;
-
-use interface::{KCard, controller::{Controller, Strategy}, Linear};
-
+use crate::game::{Controller, Judge, KCard, Scheduler, Score};
+use crate::model::{Card, CardBack};
+use std::cmp::Ordering;
+use std::fmt::Display;
 pub enum RepoSource {
     // TODO Will require network and async etc.
     Net,
@@ -22,56 +25,82 @@ impl RepoSource {
     }
 }
 
+pub struct App<T, U> {
+    controller: Controller<T, U>,
+}
+
+impl<T, U> App<T, U>
+where
+    T: KCard,
+    U: Scheduler<T>,
+{
+    pub fn new(items: Vec<T>, scheduler: U) -> Self {
+        let controller: Controller<T, U> = Controller::new(items, scheduler);
+        App { controller }
+    }
+    pub fn send(&mut self, message: Message) {
+        match message {
+            Message::Msg(text) => self.controller.input(&text),
+        }
+    }
+
+    pub fn receive(&mut self) -> Option<Message> {
+        if let Some(card) = self.controller.next() {
+            Some(Message::Msg(card.prompt()))
+        } else {
+            None
+        }
+    }
+}
+
+pub struct Linear;
+impl<T> Scheduler<T> for Linear {
+    fn sequence(&self, progress: &mut Vec<game::Progress<T>>) {
+        progress.reverse()
+    }
+}
+
+pub enum Message {
+    Msg(String),
+}
+
 pub struct KadeuRepo {
     source: RepoSource,
     path: String,
-
+}
+impl<T, U> KCard for Card<T, U>
+where
+    T: Display,
+    U: Judge,
+{
+    fn prompt(&self) -> String {
+        self.front().to_string()
+    }
+    fn score(&self, answer: &String) -> Option<Score> {
+        self.back().validate(answer)
+    }
 }
 
-//impl KadeuRepo {
-//pub fn new(path: String, source: RepoSource) -> Self {
-//KadeuRepo { path, source }
-//}
-//
-//pub fn list(&self) -> Vec<String> {
-//match self.source {
-//RepoSource::Local => {
-//let filenames = dbg!(fs::read_dir(&self.path).expect("Local Kadeu Repo was read"));
-//}
-//_ => todo!(),
-//};
-//
-//vec![]
-//}
-//
-//// TODO make this &str
-//pub fn get(&self, name: String) -> Result<Box<dyn KDeck>, KadeuError> {
-//todo!()
-//}
-//}
-
-enum Message {
-    Answer(String),
-    Feedback(String),
-    Info(String),
+impl<T, U> KCard for &Card<T, U>
+where
+    T: Display,
+    U: Judge,
+{
+    fn prompt(&self) -> String {
+        self.front().to_string()
+    }
+    fn score(&self, answer: &String) -> Option<Score> {
+        self.back().validate(answer)
+    }
 }
 
-enum State {
-    Waiting,
-    Ready,
-    Done,
+impl Judge for CardBack {
+    fn validate(&self, answer: &String) -> Option<Score> {
+        match self {
+            CardBack::Word(target) => match target.cmp(answer) {
+                Ordering::Equal => Some(Score::Hit),
+                _ => Some(Score::Miss),
+            },
+        }
+    }
 }
-
-//impl App {
-//pub fn new(deck: Box<dyn KDeck>, engine: Box<dyn Engine>) -> Self {
-//App { deck, engine }
-//}
-//fn send_message(&self, message: Message) {
-//match message {
-//Message::Answer(answer) => self.engine.input(answer),
-//_ => (),
-//};
-//}
-//}
-
-//TODO integrate this?

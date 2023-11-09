@@ -8,47 +8,6 @@ pub enum CardBack {
     //Multiple(Vec<CardBack>),
 }
 
-#[derive(Deserialize, Serialize, Clone, Debug)]
-pub struct Progress {
-    successes: u32,
-    attempts: u32,
-}
-
-// Default standard data model for serialized data formats.
-// Concrete types have to KCard interfaces to work properly.
-// However, when the details are implemented, the rest of the interface should be able to take care of the rest.
-#[derive(Deserialize, Serialize, Clone, Debug)]
-pub struct Card<T, U> {
-    front: T,
-    back: U,
-    progress: Option<Progress>,
-}
-
-impl<T, U> Card<T, U> {
-    pub fn new(front: T, back: U, progress: Option<Progress>) -> Self {
-        Card {
-            front,
-            back,
-            progress,
-        }
-    }
-    pub fn back(&self) -> &U {
-        &self.back
-    }
-    pub fn front(&self) -> &T {
-        &self.front
-    }
-
-    pub fn update_progress(&mut self, progress: Progress) {
-        self.progress = Some(progress)
-    }
-
-    pub fn clear_progress(&mut self) {
-        self.progress = None;
-    }
-
-}
-
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Deck<T, U> {
     author: Option<String>,
@@ -72,5 +31,23 @@ impl<T, U> Deck<T, U> {
     }
     pub fn author(&self) -> Option<&String> {
         self.author.as_ref()
+    }
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
+pub struct Card<T, U> {
+    front: T,
+    back: U,
+}
+
+impl<T, U> Card<T, U> {
+    pub fn new(front: T, back: U) -> Self {
+        Card { front, back }
+    }
+    pub fn back(&self) -> &U {
+        &self.back
+    }
+    pub fn front(&self) -> &T {
+        &self.front
     }
 }

@@ -1,43 +1,71 @@
-// Now that I have figured out lifetimes, my code is going off the rails a bit...
-//TODO place in own module
-pub struct Score {
-    hit: u32,
-    total: u32,
+use std::collections::VecDeque;
+pub trait Judge {
+    fn validate(&self, answer: &String) -> Option<Score>;
 }
 
-pub enum Tally {
+pub trait KCard {
+    fn prompt(&self) -> String;
+    fn score(&self, answer: &String) -> Option<Score>;
+}
+
+pub trait Scheduler<T> {
+    fn sequence(&self, progress: &mut Vec<Progress<T>>);
+}
+pub enum Score {
     Hit,
+    Partial(f64),
     Miss,
 }
-// This concept doesn't really work.
-impl Into<Score> for Vec<Tally> {
-    fn into(self) -> Score {
-        let (mut hit, mut total) = (0, 0);
-        self.iter().for_each(|tally| {
-            if let Tally::Hit = tally {
-                hit += 1;
-                total += 1;
-            } else {
-                total += 1;
-            }
-        });
-        Score { hit, total }
-    }
+pub struct Progress<T> {
+    item: T,
+    score: Option<Score>,
 }
-impl Score {
-    pub fn new() -> Score {
-        Score { hit: 0, total: 0 }
+
+impl<T> Progress<T> {
+    fn new(item: T, score: Option<Score>) -> Self {
+        Progress { item, score }
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum Mode {
-    Practice,
-    Test,
-    Hardcore,
+pub struct Controller<T, U> {
+    sequence: Vec<Progress<T>>,
+    scheduler: U,
 }
 
-enum Message {
-    Message(String),
-    End,
+impl<T, U> Controller<T, U>
+where
+    U: Scheduler<T>,
+{
+    pub fn new(items: Vec<T>, scheduler: U) -> Self {
+        let mut sequence = items
+            .into_iter()
+            .map(|item| Progress::new(item, None))
+            .collect();
+        scheduler.sequence(&mut sequence);
+        Controller {
+            sequence,
+            scheduler,
+        }
+    }
+}
+
+impl<T: KCard, U: Scheduler<T>> Controller<T, U> {
+    pub fn input(&mut self, answer: &String) {
+        self.sequence.reverse();
+        if let Some(progress) = self.sequence.pop() {
+            let card = progress.item;
+            let score = card.score(answer);
+            self.sequence.reverse();
+            self.sequence.push(Progress::new(card, score));
+        }
+        self.scheduler.sequence(&mut self.sequence);
+    }
+
+    pub fn next(&mut self) -> Option<&T> {
+        if let Some(progress) = self.sequence.last() {
+            Some(&progress.item)
+        } else {
+            None
+        }
+    }
 }
