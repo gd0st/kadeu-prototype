@@ -1,57 +1,106 @@
+use model::Deck;
+
+pub mod config;
 pub mod de;
-pub mod util;
-use serde::{Deserialize, Serialize};
-
-pub trait Kadeu {
-    fn front(&self) -> String;
-    fn back(&self) -> String;
-    fn score(&self, answer: String) -> bool;
+pub mod errors;
+pub mod game;
+pub mod model;
+use crate::game::{Controller, Judge, KCard, Scheduler, Score};
+use crate::model::{Card, CardBack};
+use std::cmp::Ordering;
+use std::fmt::Display;
+pub enum RepoSource {
+    // TODO Will require network and async etc.
+    Net,
+    Local,
 }
 
-pub trait KadeuDeck {
-    fn cards(&self) -> Vec<Box<dyn Kadeu>>;
-}
-
-#[derive(Deserialize, Serialize, Clone)]
-pub struct Card<U, T> {
-    front: U,
-    back: T,
-}
-
-#[derive(Deserialize, Serialize)]
-struct Deck<String, T> {
-    title: String,
-    cards: Vec<Card<String, T>>,
-}
-
-pub mod game {
-    use super::*;
-    #[derive(Debug, Clone)]
-    pub enum Mode {
-        Practice,
-        Test,
-        Hardcore,
-    }
-    pub struct Game {
-        cards: Vec<Box<dyn Kadeu>>,
-        mode: Mode,
+impl RepoSource {
+    fn net() -> Self {
+        Self::Net
     }
 
-    impl Game {
-        pub fn new(cards: Vec<Box<dyn Kadeu>>, mode: Mode) -> Game {
-            Game { cards, mode }
+    fn local() -> Self {
+        Self::Local
+    }
+}
+
+pub struct App<T, U> {
+    controller: Controller<T, U>,
+}
+
+impl<T, U> App<T, U>
+where
+    T: KCard,
+    U: Scheduler<T>,
+{
+    pub fn new(items: Vec<T>, scheduler: U) -> Self {
+        let controller: Controller<T, U> = Controller::new(items, scheduler);
+        App { controller }
+    }
+    pub fn send(&mut self, message: Message) {
+        match message {
+            Message::Msg(text) => self.controller.input(&text),
         }
-        pub fn answer(&mut self, answer: String) -> bool {
-            let card = self.cards.pop();
-            if let Some(card) = card {
-                let score = card.score(answer);
-                self.cards.push(card);
-                return score;
-            }
-            false
+    }
+
+    pub fn receive(&mut self) -> Option<Message> {
+        if let Some(card) = self.controller.next() {
+            Some(Message::Msg(card.prompt()))
+        } else {
+            None
         }
-        pub fn cards(&self) -> &Vec<Box<dyn Kadeu>> {
-            &self.cards
+    }
+}
+
+pub struct Linear;
+impl<T> Scheduler<T> for Linear {
+    fn sequence(&self, progress: &mut Vec<game::Progress<T>>) {
+        progress.reverse()
+    }
+}
+
+pub enum Message {
+    Msg(String),
+}
+
+pub struct KadeuRepo {
+    source: RepoSource,
+    path: String,
+}
+impl<T, U> KCard for Card<T, U>
+where
+    T: Display,
+    U: Judge,
+{
+    fn prompt(&self) -> String {
+        self.front().to_string()
+    }
+    fn score(&self, answer: &String) -> Option<Score> {
+        self.back().validate(answer)
+    }
+}
+
+impl<T, U> KCard for &Card<T, U>
+where
+    T: Display,
+    U: Judge,
+{
+    fn prompt(&self) -> String {
+        self.front().to_string()
+    }
+    fn score(&self, answer: &String) -> Option<Score> {
+        self.back().validate(answer)
+    }
+}
+
+impl Judge for CardBack {
+    fn validate(&self, answer: &String) -> Option<Score> {
+        match self {
+            CardBack::Word(target) => match target.cmp(answer) {
+                Ordering::Equal => Some(Score::Hit),
+                _ => Some(Score::Miss),
+            },
         }
     }
 }
